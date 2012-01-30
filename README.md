@@ -11,11 +11,11 @@ gem 'simple_menu'
 ## Usage
 
 ```ruby
-menu = simple_menu do
+menu = SimpleMenu.new do
   link_to 'Users', users_path
 end
 
-menu do
+menu.add do
   link_to 'New User', new_user_path
 end
 
