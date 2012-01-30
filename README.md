@@ -12,15 +12,19 @@ gem 'simple_menu'
 
 ```ruby
 menu = simple_menu do
-	link_to 'Users', users_path
+  link_to 'Users', users_path
 end
 
 menu do
-	link_to 'New User', new_user_path
+  link_to 'New User', new_user_path
+end
+
+menu.after('Users') do
+  link_to 'Invite User', invite_user_path
 end
 
 menu.before('/users/new') do
-	link_to 'Admin Users', admin_users_path if current_user.is_admin?
+  link_to 'Admin Users', admin_users_path if current_user.is_admin?
 end
 ```
 
