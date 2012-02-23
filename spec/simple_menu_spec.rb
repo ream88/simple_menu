@@ -47,13 +47,33 @@ describe SimpleMenu do
     HTML
   end
 
+  it 'allows multiple add calls' do
+    subject.add do
+      link_to('Link 1', '/link/1')
+    end
+    
+    subject.add do
+      link_to('Link 2', '/link/2')
+    end
+    
+    subject.to_s.must_equal(<<-HTML.unindent)
+      <ul>
+        <li>
+          <a href="/link/1">Link 1</a>
+        </li>
+        <li>
+          <a href="/link/2">Link 2</a>
+        </li>
+      </ul>
+    HTML
+  end
+
   it 'also creates complex menus' do
     subject.add do
       link_to('Link 1', '/link/1')
       content_tag(:strong, 'Not a Link')
       link_to('Link 2', '/link/2')
       link_to('Impossible Link', '/link/impossible') if true == false
-      self << 'Not a Link'
     end
     
     subject.to_s.must_equal(<<-HTML.unindent)
@@ -67,7 +87,70 @@ describe SimpleMenu do
         <li>
           <a href="/link/2">Link 2</a>
         </li>
-        <li>Not a Link</li>
+      </ul>
+    HTML
+  end
+
+  it 'allows adding links before other links' do
+    subject.add do
+      link_to('Link 1', '/link/1')
+      link_to('Link 4', '/link/4')
+    end
+    
+    subject.before('Link 4') do
+      link_to('Link 3', '/link/3')
+    end
+    
+    subject.before('/link/3') do
+      link_to('Link 2', '/link/2')
+    end
+    
+    subject.to_s.must_equal(<<-HTML.unindent)
+      <ul>
+        <li>
+          <a href="/link/1">Link 1</a>
+        </li>
+        <li>
+          <a href="/link/2">Link 2</a>
+        </li>
+        <li>
+          <a href="/link/3">Link 3</a>
+        </li>
+        <li>
+          <a href="/link/4">Link 4</a>
+        </li>
+      </ul>
+    HTML
+  end
+
+  it 'allows adding links after other links' do
+    subject.add do
+      link_to('Link 1', '/link/1')
+      link_to('Link 4', '/link/4')
+    end
+    
+    subject.after('Link 1') do
+      link_to('Link 2', '/link/2')
+    end
+    
+    subject.after('Link 2') do
+      link_to('Link 3', '/link/3')
+    end
+    
+    subject.to_s.must_equal(<<-HTML.unindent)
+      <ul>
+        <li>
+          <a href="/link/1">Link 1</a>
+        </li>
+        <li>
+          <a href="/link/2">Link 2</a>
+        </li>
+        <li>
+          <a href="/link/3">Link 3</a>
+        </li>
+        <li>
+          <a href="/link/4">Link 4</a>
+        </li>
       </ul>
     HTML
   end

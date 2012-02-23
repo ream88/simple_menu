@@ -18,11 +18,22 @@ class SimpleMenu
 
   def add(&block)
     instance_eval(&block)
-    self
+  end
+
+  def before(href_or_name, &block)
+    @index = index_of(href_or_name)
+    instance_eval(&block)
+    @index = nil
+  end
+
+  def after(href_or_name, &block)
+    @index = index_of(href_or_name) + 1
+    instance_eval(&block)
+    @index = nil
   end
 
   def method_missing(name, *args, &block)
-    self << template.send(name, *args, &block)
+    menu.insert(index, template.send(name, *args, &block))
   end
 
   def to_s
@@ -39,7 +50,19 @@ class SimpleMenu
 
 private
   attr_accessor :menu, :template, :options
-  delegate :each, :<<, to: :menu
+  delegate :each, to: :menu
 
   NOKOGIRI = Nokogiri::XML::Node::SaveOptions
+
+  def index
+    @index || menu.length
+  end
+
+  def index_of(href_or_name)
+    each.with_index do |item, index|
+      item = Nokogiri::XML(item).children.first
+      
+      return index if item.text.match(href_or_name) || item[:href].match(href_or_name)
+    end
+  end
 end
