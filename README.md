@@ -10,8 +10,10 @@ gem 'simple_menu'
 
 ## Usage
 
+In your helpers:
+
 ```ruby
-menu = SimpleMenu.new do
+menu = simple_menu do
   link_to 'Users', users_path
 end
 
