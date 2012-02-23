@@ -1,23 +1,31 @@
 require File.expand_path('../spec_helper', __FILE__)
 
-describe SimpleMenu do    
+describe SimpleMenu do
   let(:template) do
     Class.new do
       def link_to(name, path, options = {})
-        content_tag(:a, name, options.merge(href: path))
+        tag(:a, name, options.merge(href: path))
       end
-      
-      def content_tag(tag, content = '', options = {})
+
+      def tag(tag, content = '', options = {})
         html = ''
         html << "<#{tag}"
         html << options.map { |k, v| " #{k}=\"#{v}\"" }.join
         html << ">#{content}</#{tag}}"
       end
+
+      def url_for
+        '/'
+      end
+
+      def root_url
+        '/'
+      end
     end.new
   end
   subject { SimpleMenu.new(template) }
 
-  it 'creates the simplest menu' do
+  it 'creates menu using the simpelst syntax available' do
     SimpleMenu.new(template) do
       link_to('Link', 'link')
     end.to_s.must_equal(<<-HTML.unindent)
@@ -29,32 +37,15 @@ describe SimpleMenu do
     HTML
   end
 
-  it 'create simple menus' do
-    subject.add do
-      link_to('Link 1', '/link/1')
-      link_to('Link 2', '/link/2')
-    end
-    
+  it 'creates valid HTML even if empty' do
     subject.to_s.must_equal(<<-HTML.unindent)
-      <ul>
-        <li>
-          <a href="/link/1">Link 1</a>
-        </li>
-        <li>
-          <a href="/link/2">Link 2</a>
-        </li>
-      </ul>
+      <ul></ul>
     HTML
   end
 
-  it 'allows multiple add calls' do
-    subject.add do
-      link_to('Link 1', '/link/1')
-    end
-    
-    subject.add do
-      link_to('Link 2', '/link/2')
-    end
+  it 'create simple menus' do
+    subject.add { link_to('Link 1', '/link/1') }
+    subject.add { link_to('Link 2', '/link/2') }
     
     subject.to_s.must_equal(<<-HTML.unindent)
       <ul>
@@ -69,12 +60,10 @@ describe SimpleMenu do
   end
 
   it 'also creates complex menus' do
-    subject.add do
-      link_to('Link 1', '/link/1')
-      content_tag(:strong, 'Not a Link')
-      link_to('Link 2', '/link/2')
-      link_to('Impossible Link', '/link/impossible') if true == false
-    end
+    subject.add { link_to('Link 1', '/link/1') }
+    subject.add { tag(:strong, 'Not a Link') }
+    subject.add { link_to('Link 2', '/link/2') }
+    subject.add { link_to('Impossible Link', '/link/impossible') } if true == false
     
     subject.to_s.must_equal(<<-HTML.unindent)
       <ul>
@@ -92,18 +81,11 @@ describe SimpleMenu do
   end
 
   it 'allows adding links before other links' do
-    subject.add do
-      link_to('Link 1', '/link/1')
-      link_to('Link 4', '/link/4')
-    end
+    subject.add { link_to('Link 1', '/link/1') }
+    subject.add { link_to('Link 4', '/link/4') }
     
-    subject.before('Link 4') do
-      link_to('Link 3', '/link/3')
-    end
-    
-    subject.before('/link/3') do
-      link_to('Link 2', '/link/2')
-    end
+    subject.before('Link 4') { link_to('Link 3', '/link/3') }
+    subject.before('Link 3') { link_to('Link 2', '/link/2') }
     
     subject.to_s.must_equal(<<-HTML.unindent)
       <ul>
@@ -124,18 +106,11 @@ describe SimpleMenu do
   end
 
   it 'allows adding links after other links' do
-    subject.add do
-      link_to('Link 1', '/link/1')
-      link_to('Link 4', '/link/4')
-    end
+    subject.add { link_to('Link 1', '/link/1') }
+    subject.add { link_to('Link 4', '/link/4') }
     
-    subject.after('Link 1') do
-      link_to('Link 2', '/link/2')
-    end
-    
-    subject.after('Link 2') do
-      link_to('Link 3', '/link/3')
-    end
+    subject.after('Link 1') { link_to('Link 2', '/link/2') }
+    subject.after('Link 2') { link_to('Link 3', '/link/3') }
     
     subject.to_s.must_equal(<<-HTML.unindent)
       <ul>
@@ -155,6 +130,22 @@ describe SimpleMenu do
     HTML
   end
 
+  it 'highlights current path' do
+    subject.add { link_to('Link 1', '/link/1') }
+    subject.add { link_to('Current Link', '/') }
+    
+    subject.to_s.must_equal(<<-HTML.unindent)
+      <ul>
+        <li>
+          <a href="/link/1">Link 1</a>
+        </li>
+        <li>
+          <a href="/" class="active">Current Link</a>
+        </li>
+      </ul>
+    HTML
+  end
+
   it 'forwards unknown methods to template' do
     mock = MiniTest::Mock.new
     subject = SimpleMenu.new(mock)
@@ -164,12 +155,10 @@ describe SimpleMenu do
     mock.expect(:send, '<a href="mailto:mail@example.org">Mail</a>', [:mail_to, 'Mail', 'mail@example.org'])
     mock.expect(:send, '<strong>Not a Link</strong>', [:content_tag, :strong, 'Not a Link'])
     
-    subject.add do
-      link_to('Link 1', '/link/1')
-      link_to('Link 2', '/link/2')
-      mail_to('Mail', 'mail@example.org')
-      content_tag(:strong, 'Not a Link')
-    end
+    subject.add { link_to('Link 1', '/link/1') }
+    subject.add { link_to('Link 2', '/link/2') }
+    subject.add { mail_to('Mail', 'mail@example.org') }
+    subject.add { content_tag(:strong, 'Not a Link') }
     
     mock.verify
   end
